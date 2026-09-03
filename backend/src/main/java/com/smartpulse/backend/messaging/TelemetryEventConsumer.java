@@ -25,13 +25,10 @@ public class TelemetryEventConsumer {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @RabbitListener(
-            queues = "${smartpulse.rabbitmq.queue}"
-    )
+    @RabbitListener(queues = "${smartpulse.rabbitmq.queue}")
     public void consume(String eventJson) {
 
         try {
-
             CreateTelemetryRequest request =
                     jsonMapper.readValue(
                             eventJson,
@@ -41,56 +38,24 @@ public class TelemetryEventConsumer {
             TelemetryReading reading =
                     telemetryService.processTelemetry(request);
 
-            // Broadcast every reading to the main dashboard.
             messagingTemplate.convertAndSend(
                     "/topic/telemetry",
                     reading
             );
 
-            // Also broadcast to subscribers interested
-            // in one specific device.
             messagingTemplate.convertAndSend(
                     "/topic/telemetry/" + reading.getDeviceId(),
                     reading
             );
 
             System.out.println(
-                    "========== LIVE TELEMETRY =========="
-            );
-
-            System.out.println(
-                    "Device: " + reading.getDeviceId()
-            );
-
-            System.out.println(
-                    "Temperature: "
-                            + reading.getTemperature()
-            );
-
-            System.out.println(
-                    "Humidity: "
-                            + reading.getHumidity()
-            );
-
-            System.out.println(
-                    "Battery: "
-                            + reading.getBattery()
-            );
-
-            System.out.println(
-                    "MongoDB: SAVED"
-            );
-
-            System.out.println(
-                    "WebSocket: BROADCAST"
-            );
-
-            System.out.println(
-                    "===================================="
+                    "LIVE | Device: " + reading.getDeviceId()
+                            + " | Temp: " + reading.getTemperature()
+                            + " | Humidity: " + reading.getHumidity()
+                            + " | Battery: " + reading.getBattery()
             );
 
         } catch (Exception exception) {
-
             System.err.println(
                     "Telemetry processing failed: "
                             + exception.getMessage()
