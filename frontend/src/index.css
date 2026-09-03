@@ -1,0 +1,15 @@
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  background: #0b1120;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
