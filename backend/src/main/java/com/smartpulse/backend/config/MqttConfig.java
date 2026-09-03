@@ -1,8 +1,7 @@
 package com.smartpulse.backend.config;
 
 import com.smartpulse.backend.dto.CreateTelemetryRequest;
-import com.smartpulse.backend.model.TelemetryReading;
-import com.smartpulse.backend.service.TelemetryService;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,21 +17,38 @@ public class MqttConfig {
     private final String clientId;
     private final String topic;
 
+    private final String rabbitExchange;
+    private final String rabbitRoutingKey;
+
     private final JsonMapper jsonMapper;
-    private final TelemetryService telemetryService;
+    private final RabbitTemplate rabbitTemplate;
 
     public MqttConfig(
-            @Value("${smartpulse.mqtt.url}") String mqttUrl,
-            @Value("${smartpulse.mqtt.client-id}") String clientId,
-            @Value("${smartpulse.mqtt.topic}") String topic,
+            @Value("${smartpulse.mqtt.url}")
+            String mqttUrl,
+
+            @Value("${smartpulse.mqtt.client-id}")
+            String clientId,
+
+            @Value("${smartpulse.mqtt.topic}")
+            String topic,
+
+            @Value("${smartpulse.rabbitmq.exchange}")
+            String rabbitExchange,
+
+            @Value("${smartpulse.rabbitmq.routing-key}")
+            String rabbitRoutingKey,
+
             JsonMapper jsonMapper,
-            TelemetryService telemetryService
+            RabbitTemplate rabbitTemplate
     ) {
         this.mqttUrl = mqttUrl;
         this.clientId = clientId;
         this.topic = topic;
+        this.rabbitExchange = rabbitExchange;
+        this.rabbitRoutingKey = rabbitRoutingKey;
         this.jsonMapper = jsonMapper;
-        this.telemetryService = telemetryService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Bean
@@ -46,7 +62,9 @@ public class MqttConfig {
                 );
 
         adapter.setCompletionTimeout(5000);
-        adapter.setConverter(new DefaultPahoMessageConverter());
+        adapter.setConverter(
+                new DefaultPahoMessageConverter()
+        );
         adapter.setQos(1);
 
         return IntegrationFlow
@@ -74,48 +92,27 @@ public class MqttConfig {
 
                         request.setDeviceId(deviceId);
 
-                        TelemetryReading reading =
-                                telemetryService.processTelemetry(request);
+                        String eventJson =
+                                jsonMapper.writeValueAsString(request);
 
-                        System.out.println(
-                                "========== MQTT TELEMETRY =========="
+                        rabbitTemplate.convertAndSend(
+                                rabbitExchange,
+                                rabbitRoutingKey,
+                                eventJson
                         );
 
                         System.out.println(
-                                "Device: " + reading.getDeviceId()
-                        );
-
-                        System.out.println(
-                                "Temperature: "
-                                        + reading.getTemperature()
-                        );
-
-                        System.out.println(
-                                "Humidity: "
-                                        + reading.getHumidity()
-                        );
-
-                        System.out.println(
-                                "Battery: "
-                                        + reading.getBattery()
-                        );
-
-                        System.out.println(
-                                "Saved to MongoDB"
-                        );
-
-                        System.out.println(
-                                "===================================="
+                                "MQTT -> RabbitMQ | Device: "
+                                        + deviceId
                         );
 
                     } catch (Exception exception) {
 
                         System.err.println(
-                                "Invalid MQTT telemetry: "
+                                "MQTT ingestion failed: "
                                         + exception.getMessage()
                         );
                     }
-
                 })
                 .get();
     }

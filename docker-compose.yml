@@ -13,5 +13,25 @@ services:
 
     restart: unless-stopped
 
+
+  rabbitmq:
+    image: rabbitmq:4.3.5-management-alpine
+    container_name: smartpulse-rabbitmq
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: smartpulse
+      RABBITMQ_DEFAULT_PASS: smartpulse
+
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+    restart: unless-stopped
+
+
 volumes:
   mosquitto-data:
+  rabbitmq-data:
