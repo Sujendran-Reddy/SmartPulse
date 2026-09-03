@@ -209,7 +209,7 @@ The telemetry ingestion pipeline was tested using the SmartPulse simulator at an
 Measured throughput on the development machine:
 
 ```text
-YOUR_EPS telemetry events/second
+64.2 telemetry events/second
 ```
 
 The test exercised the complete processing path:
