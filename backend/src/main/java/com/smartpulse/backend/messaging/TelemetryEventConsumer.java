@@ -4,6 +4,7 @@ import com.smartpulse.backend.dto.CreateTelemetryRequest;
 import com.smartpulse.backend.model.TelemetryReading;
 import com.smartpulse.backend.service.TelemetryService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -12,13 +13,16 @@ public class TelemetryEventConsumer {
 
     private final JsonMapper jsonMapper;
     private final TelemetryService telemetryService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public TelemetryEventConsumer(
             JsonMapper jsonMapper,
-            TelemetryService telemetryService
+            TelemetryService telemetryService,
+            SimpMessagingTemplate messagingTemplate
     ) {
         this.jsonMapper = jsonMapper;
         this.telemetryService = telemetryService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @RabbitListener(
@@ -37,8 +41,21 @@ public class TelemetryEventConsumer {
             TelemetryReading reading =
                     telemetryService.processTelemetry(request);
 
+            // Broadcast every reading to the main dashboard.
+            messagingTemplate.convertAndSend(
+                    "/topic/telemetry",
+                    reading
+            );
+
+            // Also broadcast to subscribers interested
+            // in one specific device.
+            messagingTemplate.convertAndSend(
+                    "/topic/telemetry/" + reading.getDeviceId(),
+                    reading
+            );
+
             System.out.println(
-                    "========== RABBITMQ TELEMETRY =========="
+                    "========== LIVE TELEMETRY =========="
             );
 
             System.out.println(
@@ -61,17 +78,21 @@ public class TelemetryEventConsumer {
             );
 
             System.out.println(
-                    "Persisted to MongoDB"
+                    "MongoDB: SAVED"
             );
 
             System.out.println(
-                    "========================================"
+                    "WebSocket: BROADCAST"
+            );
+
+            System.out.println(
+                    "===================================="
             );
 
         } catch (Exception exception) {
 
             System.err.println(
-                    "RabbitMQ telemetry processing failed: "
+                    "Telemetry processing failed: "
                             + exception.getMessage()
             );
         }
