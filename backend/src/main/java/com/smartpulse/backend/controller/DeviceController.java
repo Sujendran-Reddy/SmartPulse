@@ -3,7 +3,10 @@ package com.smartpulse.backend.controller;
 import com.smartpulse.backend.dto.CreateDeviceRequest;
 import com.smartpulse.backend.model.Device;
 import com.smartpulse.backend.repository.DeviceRepository;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +23,9 @@ public class DeviceController {
     }
 
     @PostMapping
-    public Device createDevice(@RequestBody CreateDeviceRequest request) {
+    public Device createDevice(
+            @Valid @RequestBody CreateDeviceRequest request
+    ) {
 
         Device device = new Device(
                 request.getName(),
@@ -42,14 +47,20 @@ public class DeviceController {
     @GetMapping("/{id}")
     public Device getDeviceById(@PathVariable String id) {
         return deviceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Device not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Device not found"
+                ));
     }
 
     @DeleteMapping("/{id}")
     public void deleteDevice(@PathVariable String id) {
 
         if (!deviceRepository.existsById(id)) {
-            throw new RuntimeException("Device not found");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Device not found"
+            );
         }
 
         deviceRepository.deleteById(id);

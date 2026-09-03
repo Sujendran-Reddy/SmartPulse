@@ -1,9 +1,16 @@
 package com.smartpulse.backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class CreateDeviceRequest {
 
+    @NotBlank(message = "Device name is required")
     private String name;
+
+    @NotBlank(message = "Device type is required")
     private String type;
+
+    @NotBlank(message = "Location is required")
     private String location;
 
     public CreateDeviceRequest() {
