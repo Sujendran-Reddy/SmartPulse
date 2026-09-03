@@ -18,7 +18,7 @@ public class CreateTelemetryRequest {
     @Max(value = 100, message = "Humidity cannot exceed 100")
     private Double humidity;
 
-    @NotNull(message = "Battery level is required")
+    @NotNull(message = "Battery is required")
     @Min(value = 0, message = "Battery cannot be below 0")
     @Max(value = 100, message = "Battery cannot exceed 100")
     private Integer battery;
